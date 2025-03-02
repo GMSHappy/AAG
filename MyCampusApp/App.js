@@ -40,7 +40,7 @@ const MainTabs = () => (
     />
     <Tab.Screen
       name="MyFeed"
-      component={MyFeed}
+      component={MyFeedScreen}
       options={{
         tabBarIcon: ({ color, size }) => (
           <MaterialIcons name="dynamic-feed" color={color} size={size} />
@@ -60,7 +60,7 @@ const App = () => {
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Signup" component={SignupScreen} />
         <Stack.Screen name="Home" component={MainTabs} />
-        <Stack.Screen name="MyFeed" component={MyFeed}/>
+        <Stack.Screen name="MyFeed" component={MyFeedScreen} />  {/* Fixed the syntax error here */}
         <Stack.Screen name="VirtualCard" component={VirtualCardScreen} />
       </Stack.Navigator>
     </NavigationContainer>
