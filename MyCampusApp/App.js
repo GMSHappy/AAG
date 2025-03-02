@@ -10,6 +10,7 @@ import LoginScreen from "./screens/LoginScreen";
 import SignupScreen from "./screens/SignupScreen";
 import HomeScreen from "./screens/HomeScreen";
 import ProfileScreen from "./screens/ProfileScreen";
+import MyFeed from "./screens/MyFeed";
 import VirtualCardScreen from "./screens/VirtualCardScreen"; // ✅ Ensure this is correctly exported in VirtualCardScreen.js
 
 // Create Navigators
@@ -37,6 +38,16 @@ const MainTabs = () => (
         ),
       }}
     />
+    <Tab.Screen
+      name="MYFEED"
+      component={MyFeed}
+      options={{
+        tabBarIcon: ({ color, size }) => (
+          <MaterialIcons name="dynamic-feed" color={color} size={size} />
+        ),
+      }}
+    />
+
   </Tab.Navigator>
 );
 
@@ -49,6 +60,7 @@ const App = () => {
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Signup" component={SignupScreen} />
         <Stack.Screen name="Home" component={MainTabs} />
+        <Stack.Screen name="MYFEED" component={MyFeed}/>
         <Stack.Screen name="VirtualCard" component={VirtualCardScreen} />
       </Stack.Navigator>
     </NavigationContainer>
