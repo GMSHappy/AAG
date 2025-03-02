@@ -10,7 +10,6 @@ import LoginScreen from "./screens/LoginScreen";
 import SignupScreen from "./screens/SignupScreen";
 import HomeScreen from "./screens/HomeScreen";
 import ProfileScreen from "./screens/ProfileScreen";
-import MyFeedScreen from "./screens/MyFeedScreen";
 import VirtualCardScreen from "./screens/VirtualCardScreen"; // ✅ Ensure this is correctly exported in VirtualCardScreen.js
 import TimetableScreen from "./screens/Timetable";
 
@@ -39,24 +38,6 @@ const MainTabs = () => (
         ),
       }}
     />
-    <Tab.Screen
-      name="MyFeed"
-      component={MyFeedScreen}
-      options={{
-        tabBarIcon: ({ color, size }) => (
-          <MaterialIcons name="dynamic-feed" color={color} size={size} />
-        ),
-      }}
-    />
-    <Tab.Screen
-      name="Timetable"
-      component={TimetableScreen}
-      options={{
-        tabBarIcon: ({ color, size }) => (
-          <MaterialIcons name="schedule" color={color} size={size} />
-        ),
-      }}
-    />
   </Tab.Navigator>
 );
 
@@ -69,6 +50,7 @@ const App = () => {
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Signup" component={SignupScreen} />
         <Stack.Screen name="Home" component={MainTabs} />
+        <Stack.Screen name="MyFeed" component={MyFeedScreen} />  {/* Fixed the syntax error here */}
         <Stack.Screen name="VirtualCard" component={VirtualCardScreen} />
         <Stack.Screen name="Timetable" component={TimetableScreen} />
       </Stack.Navigator>
