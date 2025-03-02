@@ -20,6 +20,7 @@ const LoginScreen = ({ navigation }) => {
     } catch (error) {
       Alert.alert("Login Failed", error.message);
     }
+    
   };
 
   return (
