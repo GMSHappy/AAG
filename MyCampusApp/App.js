@@ -39,7 +39,7 @@ const MainTabs = () => (
       }}
     />
     <Tab.Screen
-      name="MYFEED"
+      name="MyFeed"
       component={MyFeed}
       options={{
         tabBarIcon: ({ color, size }) => (
@@ -60,7 +60,7 @@ const App = () => {
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Signup" component={SignupScreen} />
         <Stack.Screen name="Home" component={MainTabs} />
-        <Stack.Screen name="MYFEED" component={MyFeed}/>
+        <Stack.Screen name="MyFeed" component={MyFeed}/>
         <Stack.Screen name="VirtualCard" component={VirtualCardScreen} />
       </Stack.Navigator>
     </NavigationContainer>
