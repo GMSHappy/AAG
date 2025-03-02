@@ -16,8 +16,12 @@ const Timetable = () => {
     }, []);
 
     const fetchTimetable = async () => {
-        const querySnapshot = await getDocs(collection(db, "timetable"));
-        setTimetable(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        try {
+            const querySnapshot = await getDocs(collection(db, "timetable"));
+            setTimetable(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        } catch (error) {
+            console.error("Error fetching timetable:", error);
+        }
     };
 
     const handleInputChange = (e) => {
@@ -26,14 +30,18 @@ const Timetable = () => {
 
     const addOrUpdateTimetable = async (e) => {
         e.preventDefault();
-        if (editingId) {
-            await updateDoc(doc(db, "timetable", editingId), form);
-            setEditingId(null);
-        } else {
-            await addDoc(collection(db, "timetable"), form);
+        try {
+            if (editingId) {
+                await updateDoc(doc(db, "timetable", editingId), form);
+                setEditingId(null);
+            } else {
+                await addDoc(collection(db, "timetable"), form);
+            }
+            setForm({ date: "", time: "", day: "", lecture: "", course: "", type: "" });
+            fetchTimetable();
+        } catch (error) {
+            console.error("Error adding or updating timetable:", error);
         }
-        setForm({ date: "", time: "", day: "", lecture: "", course: "", type: "" });
-        fetchTimetable();
     };
 
     const editTimetable = (entry) => {
@@ -42,8 +50,12 @@ const Timetable = () => {
     };
 
     const deleteTimetable = async (id) => {
-        await deleteDoc(doc(db, "timetable", id));
-        fetchTimetable();
+        try {
+            await deleteDoc(doc(db, "timetable", id));
+            fetchTimetable();
+        } catch (error) {
+            console.error("Error deleting timetable entry:", error);
+        }
     };
 
     const exportToPDF = () => {
@@ -59,6 +71,8 @@ const Timetable = () => {
         setReminders([...reminders, entry]);
         alert("Reminder set for " + entry.lecture);
     };
+
+    const filteredTimetable = timetable.filter(entry => entry.lecture.includes(search) || entry.date.includes(search));
 
     return (
         <div>
@@ -80,7 +94,7 @@ const Timetable = () => {
                 <button type="submit">{editingId ? "Update" : "Add"}</button>
             </form>
             <ul>
-                {timetable.filter(entry => entry.lecture.includes(search) || entry.date.includes(search)).map(entry => (
+                {filteredTimetable.map(entry => (
                     <li key={entry.id} style={{ backgroundColor: entry.type === "Lab" ? "lightblue" : entry.type === "Seminar" ? "lightgreen" : "white" }}>
                         {entry.date} {entry.time} - {entry.day} - {entry.lecture} ({entry.course}) [{entry.type}]
                         <button onClick={() => editTimetable(entry)}>Edit</button>
