@@ -15,37 +15,48 @@ const TimetableScreen = () => {
     useEffect(() => {
         if (user) fetchTimetable();
     }, [user]);
-    
 
     const fetchTimetable = async () => {
-        const querySnapshot = await getDocs(collection(db, "timetable"));
-        setTimetable(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        if (!user) return;
+        try {
+            const q = query(collection(db, "timetable"), where("userId", "==", user.uid));
+            const querySnapshot = await getDocs(q);
+            setTimetable(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        } catch (error) {
+            Alert.alert("Error", "Failed to fetch timetable. Check your permissions.");
+            console.error("Error fetching timetable:", error);
+        }
     };
 
     const handleInputChange = (name, value) => {
         setForm({ ...form, [name]: value });
     };
 
-    const addOrUpdateTimetable = async (e) => {
-        e.preventDefault();
-        if (editingId) {
-            await updateDoc(doc(db, "timetable", editingId), form);
-            setEditingId(null);
-        } else {
-            await addDoc(collection(db, "timetable"), form);
+    const addOrUpdateTimetable = async () => {
+        if (!user) {
+            Alert.alert("Error", "User not authenticated.");
+            return;
         }
+
+        const entryData = { ...form, userId: user.uid };
+
+        try {
+            if (editingId) {
+                await updateDoc(doc(db, "timetable", editingId), entryData);
+                setEditingId(null);
+            } else {
+                await addDoc(collection(db, "timetable"), entryData);
+            }
+            resetForm();
+            fetchTimetable();
+        } catch (error) {
+            Alert.alert("Error", "Failed to save timetable.");
+            console.error("Error saving timetable:", error);
+        }
+    };
+
+    const resetForm = () => {
         setForm({ date: "", time: "", day: "", lecture: "", course: "", type: "" });
-        fetchTimetable();
-    };
-
-    const editTimetable = (entry) => {
-        setForm(entry);
-        setEditingId(entry.id);
-    };
-
-    const deleteTimetable = async (id) => {
-        await deleteDoc(doc(db, "timetable", id));
-        fetchTimetable();
     };
 
     const exportToPDF = () => {
@@ -62,38 +73,35 @@ const TimetableScreen = () => {
         pdf.save("timetable.pdf");
     };
 
-    const filteredTimetable = timetable.filter(entry => entry.lecture.includes(search) || entry.date.includes(search));
-
     return (
-        <div>
-            <h1>Timetable</h1>
-            <input type="text" placeholder="Search by lecture or date..." value={search} onChange={(e) => setSearch(e.target.value)} />
-            <button onClick={exportToPDF}>Export as PDF</button>
-            <form onSubmit={addOrUpdateTimetable}>
-                <input type="date" name="date" value={form.date} onChange={handleInputChange} required />
-                <input type="time" name="time" value={form.time} onChange={handleInputChange} required />
-                <input type="text" name="day" placeholder="Day" value={form.day} onChange={handleInputChange} required />
-                <input type="text" name="lecture" placeholder="Lecture Name" value={form.lecture} onChange={handleInputChange} required />
-                <input type="text" name="course" placeholder="Course" value={form.course} onChange={handleInputChange} required />
-                <select name="type" value={form.type} onChange={handleInputChange}>
-                    <option value="">Select Type</option>
-                    <option value="Lecture">Lecture</option>
-                    <option value="Lab">Lab</option>
-                    <option value="Seminar">Seminar</option>
-                </select>
-                <button type="submit">{editingId ? "Update" : "Add"}</button>
-            </form>
-            <ul>
-                {timetable.filter(entry => entry.lecture.includes(search) || entry.date.includes(search)).map(entry => (
-                    <li key={entry.id} style={{ backgroundColor: entry.type === "Lab" ? "lightblue" : entry.type === "Seminar" ? "lightgreen" : "white" }}>
-                        {entry.date} {entry.time} - {entry.day} - {entry.lecture} ({entry.course}) [{entry.type}]
-                        <button onClick={() => editTimetable(entry)}>Edit</button>
-                        <button onClick={() => deleteTimetable(entry.id)}>Delete</button>
-                        <button onClick={() => setReminder(entry)}>Set Reminder</button>
-                    </li>
-                ))}
-            </ul>
-        </div>
+        <ScrollView style={{ flex: 1, padding: 20, backgroundColor: "#f5f5f5" }}>
+            <Text variant="headlineMedium" style={{ textAlign: "center", marginBottom: 20 }}>My Timetable</Text>
+            <TextInput label="Date" mode="outlined" onChangeText={(text) => handleInputChange("date", text)} value={form.date} />
+            <TextInput label="Time" mode="outlined" onChangeText={(text) => handleInputChange("time", text)} value={form.time} />
+            <TextInput label="Day" mode="outlined" onChangeText={(text) => handleInputChange("day", text)} value={form.day} />
+            <TextInput label="Lecture" mode="outlined" onChangeText={(text) => handleInputChange("lecture", text)} value={form.lecture} />
+            <TextInput label="Course" mode="outlined" onChangeText={(text) => handleInputChange("course", text)} value={form.course} />
+            <TextInput label="Type" mode="outlined" onChangeText={(text) => handleInputChange("type", text)} value={form.type} />
+            <Button mode="contained" onPress={addOrUpdateTimetable} style={{ marginVertical: 10 }}>{editingId ? "Update" : "Add"} Timetable</Button>
+            <Divider style={{ marginVertical: 10 }} />
+            <FlatList
+                data={timetable}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                    <Card style={{ marginBottom: 10 }}>
+                        <Card.Title title={`${item.date} ${item.time}`} subtitle={`${item.day} - ${item.lecture}`} left={(props) => <MaterialIcons {...props} name="event" />} />
+                        <Card.Content>
+                            <Text>{`Course: ${item.course}`}</Text>
+                            <Text>{`Type: ${item.type}`}</Text>
+                        </Card.Content>
+                        <Card.Actions>
+                            <Button onPress={() => deleteDoc(doc(db, "timetable", item.id)).then(fetchTimetable)}>Delete</Button>
+                        </Card.Actions>
+                    </Card>
+                )}
+            />
+            <Button mode="outlined" onPress={exportToPDF} style={{ marginTop: 10 }}>Export as PDF</Button>
+        </ScrollView>
     );
 };
 
