@@ -1,153 +1,260 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Alert, Switch } from "react-native";
-import { Avatar, Button, Text, Card, List, Divider, TextInput } from "react-native-paper";
+import { View, StyleSheet, Alert, TouchableOpacity, Modal } from "react-native";
+import { Avatar, Button, Text, Divider } from "react-native-paper";
 import { useNavigation } from "@react-navigation/native";
-import LottieView from "lottie-react-native";
 import * as ImagePicker from "expo-image-picker";
 import { auth, db } from "../firebaseConfig";
 import { doc, setDoc, getDoc } from "firebase/firestore";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import EditProfile from "../EditProfile"; // Import the new component
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
   const user = auth.currentUser;
 
-  if (!user) return null; // ✅ Prevent crash if user is not logged in
+  if (!user) return null;
 
-  const [userImage, setUserImage] = useState(null);
-  const [userName, setUserName] = useState(user?.displayName || "User");
-  const [bio, setBio] = useState("This is my bio...");
+  const [imageUri, setImageUri] = useState(null);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [bio, setBio] = useState("");
   const [birthday, setBirthday] = useState("");
-  const [darkMode, setDarkMode] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [friendsCount, setFriendsCount] = useState(0);
+  const [uploadVisible, setUploadVisible] = useState(false);
+  const [editProfileVisible, setEditProfileVisible] = useState(false);
 
+  // Load user info from Firestore
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
           const data = userDoc.data();
-          setUserImage(data.imageUri);
-          setBio(data.bio || "This is my bio...");
+          setImageUri(data.imageUri || null);
+          setFirstName(data.firstName || "");
+          setLastName(data.lastName || "");
+          setBio(data.bio || "");
           setBirthday(data.birthday || "");
-          setDarkMode(data.darkMode || false);
+          setFriendsCount(data.friendsCount || 0);
         }
       } catch (error) {
         Alert.alert("Error", "Could not load profile data.");
-      } finally {
-        setTimeout(() => setLoading(false), 3000);
       }
     };
     fetchUserProfile();
   }, [user]);
 
-  const updateUserProfile = async (updates) => {
+  // Update user info in Firestore
+  const updateUserProfile = async (updatedData) => {
     try {
-      await setDoc(doc(db, "users", user.uid), updates, { merge: true });
-    } catch {
+      await setDoc(doc(db, "users", user.uid), updatedData, { merge: true });
+      setFirstName(updatedData.firstName);
+      setLastName(updatedData.lastName);
+      setBio(updatedData.bio);
+      setBirthday(updatedData.birthday);
+      setEditProfileVisible(false);
+    } catch (error) {
       Alert.alert("Error", "Could not update profile data.");
     }
   };
 
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    updateUserProfile({ darkMode: !darkMode });
+  // Pick an image from camera or gallery
+  const pickImage = async (fromCamera = false) => {
+    let result;
+    if (fromCamera) {
+      result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
+    } else {
+      result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
+    }
+
+    if (!result.canceled && result.assets.length > 0) {
+      const newImageUri = result.assets[0].uri;
+      setImageUri(newImageUri);
+      await setDoc(doc(db, "users", user.uid), { imageUri: newImageUri }, { merge: true });
+    }
   };
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <LottieView source={require("../assets/loading-animation.json")} autoPlay loop style={styles.loadingAnimation} />
-      </View>
-    );
-  }
-
   return (
-    <View style={[styles.container, darkMode && styles.darkBackground]}>
-      <Card style={[styles.card, darkMode && styles.darkCard]}>
-        <Card.Content>
-          <Avatar.Image
-            size={150}
-            source={userImage ? { uri: userImage } : require("../assets/default-avatar.png")}
-            style={styles.avatar}
-          />
-          <Text variant="titleLarge" style={[styles.name, darkMode && styles.darkText]}>
-            {userName}
-          </Text>
-
-          <TextInput
-            mode="outlined"
-            label="Enter Your Birthday"
-            value={birthday}
-            onChangeText={setBirthday}
-            onBlur={() => updateUserProfile({ birthday })}
-            style={styles.input}
-          />
-
-          {editing ? (
-            <TextInput
-              mode="outlined"
-              label="Edit Bio"
-              value={bio}
-              onChangeText={setBio}
-              style={[styles.input, darkMode && styles.darkInput]}
-              onBlur={() => {
-                setEditing(false);
-                updateUserProfile({ bio });
-              }}
-              autoFocus
-              theme={{ colors: { text: darkMode ? "#FFF" : "#000" } }}
-            />
-          ) : (
-            <Text
-              variant="bodySmall"
-              style={[styles.bio, darkMode && styles.darkText]}
-              onPress={() => setEditing(true)}
-            >
-              {bio}
-            </Text>
-          )}
-
-          <Button mode="contained" onPress={() => navigation.navigate("VirtualCard")} style={styles.button}>
-            Virtual Student Card
-          </Button>
-        </Card.Content>
-      </Card>
-
-      <View style={[styles.menuContainer, darkMode && styles.darkMenu]}>
-        <List.Item
-          title="Dark Mode"
-          left={() => <List.Icon icon="theme-light-dark" />}
-          right={() => <Switch value={darkMode} onValueChange={toggleDarkMode} />}
-          titleStyle={darkMode ? styles.darkText : {}}
+    <View style={styles.container}>
+      {/* Profile Avatar */}
+      <TouchableOpacity onPress={() => setUploadVisible(true)}>
+        <Avatar.Image
+          size={140}
+          source={imageUri ? { uri: imageUri } : require("../assets/default-avatar.png")}
         />
-        <Divider />
-        <List.Item
-          title="Logout"
-          left={() => <List.Icon icon="logout" />}
-          onPress={() => auth.signOut()}
-          titleStyle={darkMode ? styles.darkText : {}}
-        />
+      </TouchableOpacity>
+
+      {/* Basic user info */}
+      <Text style={styles.name}>
+        {firstName} {lastName}
+      </Text>
+      <Text style={styles.friendsCount}>👥 Friends: {friendsCount}</Text>
+      <Text style={styles.bio}>{bio}</Text>
+
+      {/* Edit Profile Button */}
+      <Button
+        icon="pencil"
+        mode="contained"
+        onPress={() => setEditProfileVisible(true)}
+        style={styles.editButton}
+      >
+        Edit Profile
+      </Button>
+
+      <Divider style={styles.divider} />
+
+      {/* Menu Items */}
+      <View style={styles.menuContainer}>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate("Friends")}
+        >
+          <Icon name="account-group" size={24} color="#666" />
+          <Text style={styles.menuText}>Friends</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate("Messages")}
+        >
+          <Icon name="message" size={24} color="#666" />
+          <Text style={styles.menuText}>Messages</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate("MyCourses")}
+        >
+          <Icon name="book" size={24} color="#666" />
+          <Text style={styles.menuText}>My Courses</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate("Settings")}
+        >
+          <Icon name="cog" size={24} color="#666" />
+          <Text style={styles.menuText}>Settings</Text>
+        </TouchableOpacity>
       </View>
+
+      {/* Modal for Edit Profile */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={editProfileVisible}
+        onRequestClose={() => setEditProfileVisible(false)}
+      >
+        {/*
+          Let EditProfile handle its own overlay + white card.
+          Just pass the data and callbacks to it.
+        */}
+        <EditProfile
+          user={{ firstName, lastName, bio, birthday }}
+          onSave={updateUserProfile}
+          onCancel={() => setEditProfileVisible(false)}
+        />
+      </Modal>
+
+      {/* Modal for Upload Profile Picture */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={uploadVisible}
+        onRequestClose={() => setUploadVisible(false)}
+      >
+        <View style={styles.uploadModalContainer}>
+          <View style={styles.uploadModalContent}>
+            <Text style={styles.uploadModalTitle}>Upload Profile Picture</Text>
+            <Button mode="contained" onPress={() => pickImage(true)}>
+              📷 Take Photo
+            </Button>
+            <Button mode="contained" onPress={() => pickImage(false)}>
+              🖼️ Choose from Gallery
+            </Button>
+            <Button onPress={() => setUploadVisible(false)}>Cancel</Button>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
 
+// ============== STYLES for ProfileScreen ==============
 const styles = StyleSheet.create({
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F4F4F4" },
-  loadingAnimation: { width: 250, height: 250 },
-  container: { flex: 1, padding: 20, backgroundColor: "#F4F4F4" },
-  darkBackground: { backgroundColor: "#121212" },
-  card: { alignItems: "center", backgroundColor: "white", borderRadius: 10, elevation: 3, padding: 20, marginBottom: 20 },
-  darkCard: { backgroundColor: "#1E1E1E" },
-  avatar: { marginBottom: 15 },
-  name: { fontSize: 22, fontWeight: "bold", marginBottom: 5, color: "#000" },
-  darkText: { color: "#FFF" },
-  input: { width: "100%", marginBottom: 10 },
-  darkInput: { backgroundColor: "#1E1E1E", color: "#FFF" },
-  button: { marginTop: 10, width: "100%" },
-  menuContainer: { backgroundColor: "white", borderRadius: 10, elevation: 3, padding: 10 },
-  darkMenu: { backgroundColor: "#1E1E1E" },
+  container: {
+    flex: 1,
+    paddingTop: 50,
+    paddingHorizontal: 20,
+    backgroundColor: "#FFF",
+    alignItems: "center",
+  },
+  name: {
+    fontSize: 26,
+    fontWeight: "bold",
+    marginTop: 10,
+  },
+  friendsCount: {
+    fontSize: 16,
+    color: "#666",
+    marginTop: 5,
+  },
+  bio: {
+    fontSize: 18,
+    color: "#666",
+    marginTop: 10,
+    textAlign: "center",
+  },
+  editButton: {
+    marginTop: 20,
+  },
+  divider: {
+    width: "100%",
+    marginVertical: 20,
+  },
+  menuContainer: {
+    width: "100%",
+    marginTop: 20,
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  menuText: {
+    fontSize: 18,
+    color: "#333",
+    marginLeft: 15,
+  },
+
+  // ============== Upload Picture Modal styles ==============
+  uploadModalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  uploadModalContent: {
+    width: "90%",
+    backgroundColor: "#FFF",
+    padding: 20,
+    borderRadius: 10,
+  },
+  uploadModalTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 20,
+    textAlign: "center",
+  },
 });
 
 export default ProfileScreen;
