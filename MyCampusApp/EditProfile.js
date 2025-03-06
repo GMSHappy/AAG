@@ -7,9 +7,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
-  TouchableOpacity,
 } from "react-native";
-import { Button, Text } from "react-native-paper";
+import { Button, Text, Alert } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 const EditProfile = ({ user, onSave, onCancel }) => {
@@ -17,9 +16,33 @@ const EditProfile = ({ user, onSave, onCancel }) => {
   const [lastName, setLastName] = useState(user.lastName || "");
   const [bio, setBio] = useState(user.bio || "");
   const [birthday, setBirthday] = useState(user.birthday || "");
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = () => {
-    onSave({ firstName, lastName, bio, birthday });
+  const handleSave = async () => {
+    if (isSaving) return; // Prevent multiple clicks
+
+    try {
+      setIsSaving(true);
+      console.log("Saving profile...");
+
+      const updatedData = { firstName, lastName, bio, birthday };
+
+      // Wait for Firestore update
+      await onSave(updatedData);
+
+      console.log("Profile saved.");
+
+      // Close the modal smoothly
+      setTimeout(() => {
+        setIsSaving(false);
+        onCancel(); // Ensure modal fully unmounts
+        console.log("Modal closed.");
+      }, 200); // Short delay prevents UI lag
+    } catch (error) {
+      setIsSaving(false);
+      Alert.alert("Error", "Failed to save profile. Please try again.");
+      console.error("Error saving profile:", error);
+    }
   };
 
   return (
@@ -79,8 +102,8 @@ const EditProfile = ({ user, onSave, onCancel }) => {
 
             {/* Save and Cancel Buttons */}
             <View style={styles.buttonContainer}>
-              <Button mode="contained" onPress={handleSave} style={styles.saveButton}>
-                Save
+              <Button mode="contained" onPress={handleSave} style={styles.saveButton} disabled={isSaving}>
+                {isSaving ? "Saving..." : "Save"}
               </Button>
               <Button onPress={onCancel} style={styles.cancelButton}>
                 Cancel
