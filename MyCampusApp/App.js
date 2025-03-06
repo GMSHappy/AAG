@@ -10,15 +10,17 @@ import LoginScreen from "./screens/LoginScreen";
 import SignupScreen from "./screens/SignupScreen";
 import HomeScreen from "./screens/HomeScreen";
 import ProfileScreen from "./screens/ProfileScreen";
-import VirtualCardScreen from "./screens/VirtualCardScreen"; // ✅ Ensure this is correctly exported in VirtualCardScreen.js
+import VirtualCardScreen from "./screens/VirtualCardScreen";
 import TimetableScreen from "./screens/Timetable";
-import MyFeedScreen from "./screens/MyFeedScreen"; // ✅ Fixed import to match correct filename
+import MyFeedScreen from "./screens/MyFeedScreen";
+import ChatListScreen from "./screens/ChatListScreen";
+import ChatScreen from "./screens/ChatScreen";
 
 // Create Navigators
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// Bottom Tab Navigation (Home, Profile, MyFeed, Timetable)
+// ✅ Bottom Tab Navigation (Home, Profile, MyFeed, Timetable)
 const MainTabs = () => (
   <Tab.Navigator screenOptions={{ headerShown: false }}>
     <Tab.Screen
@@ -60,7 +62,7 @@ const MainTabs = () => (
   </Tab.Navigator>
 );
 
-// Main App Navigator
+// ✅ Main App Navigator
 const App = () => {
   return (
     <NavigationContainer>
@@ -70,6 +72,8 @@ const App = () => {
         <Stack.Screen name="Signup" component={SignupScreen} />
         <Stack.Screen name="Home" component={MainTabs} />
         <Stack.Screen name="VirtualCard" component={VirtualCardScreen} />
+        <Stack.Screen name="ChatListScreen" component={ChatListScreen} />
+        <Stack.Screen name="ChatScreen" component={ChatScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

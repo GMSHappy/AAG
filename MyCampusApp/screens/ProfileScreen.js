@@ -131,9 +131,9 @@ const ProfileScreen = () => {
           <Icon name="account-group" size={24} color="#666" />
           <Text style={styles.menuText}>Friends</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("Messages")}>
-          <Icon name="message" size={24} color="#666" />
-          <Text style={styles.menuText}>Messages</Text>
+        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("ChatListScreen")}>
+         <Icon name="message" size={24} color="#666" />
+         <Text style={styles.menuText}>Messages</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("MyCourses")}>
           <Icon name="book" size={24} color="#666" />
