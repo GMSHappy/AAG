@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, FlatList } from "react-native";
 import { Text, Avatar } from "react-native-paper";
 import { useRoute } from "@react-navigation/native";
 import { auth } from "../firebaseConfig";
-import { getUserChats } from "../services/firestoreService";
 import { getChatMessages, sendMessage } from "../services/firestoreService";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
@@ -14,6 +13,7 @@ const ChatScreen = () => {
 
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
+  const flatListRef = useRef(null);
 
   useEffect(() => {
     const unsubscribe = getChatMessages(chatId, setMessages);
@@ -25,16 +25,17 @@ const ChatScreen = () => {
 
     await sendMessage(chatId, userId, newMessage.trim());
     setNewMessage("");
+    flatListRef.current.scrollToEnd({ animated: true });
   };
 
   const renderMessageItem = ({ item }) => {
     const isOwnMessage = item.senderId === userId;
     return (
-      <View style={[styles.messageContainer, isOwnMessage ? styles.ownMessage : styles.otherMessage]}>
+      <View style={[styles.messageContainer, isOwnMessage ? styles.ownMessageContainer : styles.otherMessageContainer]}>
         {!isOwnMessage && (
-          <Avatar.Image size={30} source={require("../assets/default-avatar.png")} style={styles.avatar} />
+          <Avatar.Image size={35} source={require("../assets/default-avatar.png")} style={styles.avatar} />
         )}
-        <View style={styles.messageBubble}>
+        <View style={[styles.messageBubble, isOwnMessage ? styles.ownMessageBubble : styles.otherMessageBubble]}>
           <Text style={styles.messageText}>{item.text}</Text>
           <Text style={styles.timestamp}>
             {item.timestamp?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || "Now"}
@@ -45,10 +46,28 @@ const ChatScreen = () => {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <FlatList data={messages} renderItem={renderMessageItem} keyExtractor={(item) => item.id} inverted />
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0} // Adjusted for iOS
+    >
+      <FlatList
+        ref={flatListRef}
+        data={messages}
+        renderItem={renderMessageItem}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.messagesList}
+        onContentSizeChange={() => flatListRef.current.scrollToEnd({ animated: true })}
+        onLayout={() => flatListRef.current.scrollToEnd({ animated: true })}
+      />
       <View style={styles.inputContainer}>
-        <TextInput style={styles.input} placeholder="Type a message..." value={newMessage} onChangeText={setNewMessage} />
+        <TextInput
+          style={styles.input}
+          placeholder="Type a message..."
+          value={newMessage}
+          onChangeText={setNewMessage}
+          placeholderTextColor="#888"
+        />
         <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
           <Icon name="send" size={24} color="#FFF" />
         </TouchableOpacity>
@@ -57,48 +76,80 @@ const ChatScreen = () => {
   );
 };
 
-// ================= STYLES =================
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFF",
+    backgroundColor: "#F4F4F4",
+  },
+  messagesList: {
+    flexGrow: 1,
+    paddingHorizontal: 10,
+    paddingTop: 10,
+    paddingBottom: 100, // Increased padding to avoid overlap
   },
   messageContainer: {
     flexDirection: "row",
+    alignItems: "flex-end",
     marginBottom: 10,
   },
-  ownMessage: {
+  ownMessageContainer: {
     alignSelf: "flex-end",
-    backgroundColor: "#DCF8C6",
-    padding: 10,
-    borderRadius: 10,
   },
-  otherMessage: {
+  otherMessageContainer: {
     alignSelf: "flex-start",
-    backgroundColor: "#ECECEC",
+  },
+  messageBubble: {
+    maxWidth: "75%",
     padding: 10,
-    borderRadius: 10,
+    borderRadius: 15,
+  },
+  ownMessageBubble: {
+    backgroundColor: "#007AFF",
+    borderTopRightRadius: 0,
+  },
+  otherMessageBubble: {
+    backgroundColor: "#E5E5EA",
+    borderTopLeftRadius: 0,
+  },
+  messageText: {
+    fontSize: 16,
+    color: "#FFF",
+  },
+  timestamp: {
+    fontSize: 12,
+    color: "#DDD",
+    alignSelf: "flex-end",
+    marginTop: 5,
   },
   avatar: {
-    marginRight: 10,
+    marginRight: 8,
   },
   inputContainer: {
     flexDirection: "row",
-    padding: 10,
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    backgroundColor: "#FFF",
     borderTopWidth: 1,
-    borderTopColor: "#EEE",
+    borderTopColor: "#CCC",
   },
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: "#CCC",
-    borderRadius: 20,
-    padding: 10,
+    borderColor: "#DDD",
+    borderRadius: 25,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    fontSize: 16,
+    backgroundColor: "#FFF",
   },
   sendButton: {
+    marginLeft: 10,
     backgroundColor: "#007AFF",
-    borderRadius: 20,
     padding: 10,
+    borderRadius: 50,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
 

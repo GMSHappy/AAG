@@ -12,45 +12,27 @@ const ChatListScreen = () => {
   const [loading, setLoading] = useState(true);
   const userId = auth.currentUser?.uid;
 
-  // Debugging: Log the authenticated user ID
-  console.log("Authenticated user ID:", userId);
-
   useEffect(() => {
     if (!userId) {
-      console.error("❌ User is not authenticated.");
       setLoading(false);
       return;
     }
 
-    // Define the Firestore query
     const q = query(
       collection(db, "chats"),
       where("members", "array-contains", userId),
       orderBy("lastUpdated", "desc")
     );
 
-    // Set up a real-time listener for chats
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        console.log("Firestore snapshot size:", snapshot.size);
-        console.log("Chats:", snapshot.docs.map((doc) => doc.data()));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const updatedChats = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setChats(updatedChats);
+      setLoading(false);
+    });
 
-        const updatedChats = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-
-        setChats(updatedChats);
-        setLoading(false);
-      },
-      (error) => {
-        console.error("❌ Error fetching chats:", error);
-        setLoading(false);
-      }
-    );
-
-    // Clean up the listener on unmount
     return () => unsubscribe();
   }, [userId]);
 
@@ -58,7 +40,7 @@ const ChatListScreen = () => {
     const isGroupChat = item.members.length > 2;
     const chatName = item.chatName || "Private Chat";
     const lastMessage = item.lastMessage || "No messages yet";
-    const lastUpdated = item.lastUpdated?.toDate().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) || "Recently";
+    const lastUpdated = item.lastUpdated?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || "Recently";
 
     return (
       <TouchableOpacity
@@ -96,7 +78,6 @@ const ChatListScreen = () => {
   );
 };
 
-// ================= STYLES =================
 const styles = StyleSheet.create({
   container: {
     flex: 1,
