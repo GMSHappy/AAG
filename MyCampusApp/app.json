@@ -13,18 +13,46 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app uses the camera to scan student cards.",
+        "NSMicrophoneUsageDescription": "This app uses the microphone for audio recording.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.anonymous.MyCampusApp"
     },
     "android": {
+      "permissions": [
+        "CAMERA",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "intentFilters": [
+        {
+          "action": "android.intent.action.MAIN",
+          "category": [
+            "android.intent.category.LAUNCHER"
+          ],
+          "autoVerify": true
+        }
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.anonymous.MyCampusApp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-    ]
+      "expo-camera",
+      "expo-barcode-scanner"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "2c66c738-e4ac-4af1-9ab1-db863475126a"
+      }
+    }
   }
 }

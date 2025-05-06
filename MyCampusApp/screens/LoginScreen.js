@@ -20,28 +20,27 @@ const LoginScreen = ({ navigation }) => {
     } catch (error) {
       Alert.alert("Login Failed", error.message);
     }
-    
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Login</Text>
 
-      <TextInput 
-        placeholder="Email" 
-        value={email} 
-        onChangeText={setEmail} 
-        style={styles.input} 
+      <TextInput
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        style={styles.input}
         autoCapitalize="none"
         keyboardType="email-address"
       />
 
-      <TextInput 
-        placeholder="Password" 
-        value={password} 
-        onChangeText={setPassword} 
-        secureTextEntry 
-        style={styles.input} 
+      <TextInput
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        style={styles.input}
       />
 
       <TouchableOpacity onPress={handleLogin} style={styles.button}>

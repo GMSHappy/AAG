@@ -1,38 +1,44 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from "react-native";
-import { auth } from "../firebaseConfig";  // Correctly import auth from firebaseConfig.js
+import { auth } from "../firebaseConfig";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { setDoc, doc } from "firebase/firestore"; // Import Firestore functions
-import { db } from "../firebaseConfig";  // Correctly import db from firebaseConfig.js
+import { setDoc, doc } from "firebase/firestore";
+import { db } from "../firebaseConfig";
 
 const SignupScreen = ({ navigation }) => {
-  const [email, setEmail] = useState(""); 
-  const [password, setPassword] = useState(""); 
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [name, setName] = useState("");
+  const [campus, setCampus] = useState("");
 
   const handleSignup = async () => {
-    if (!email || !password) {
-      Alert.alert("Error", "Please enter email and password.");
+    if (!email || !password || !confirmPassword || !name || !campus) {
+      Alert.alert("Error", "Please fill in all fields.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert("Error", "Passwords do not match.");
       return;
     }
 
     try {
-      // 1. Create user with email and password
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user; // Get user object
+      const user = userCredential.user;
 
-      // 2. Write user data to Firestore, using the UID as document ID
-      await setDoc(doc(db, "users", user.uid), { 
-        email: user.email,       // Save email
-        name: "Your Name",       // Save the name (you can replace with dynamic input later)
-        password: user.password, // Save password (you should not save password in plaintext in real app)
-        uid: user.uid,           // Store UID
-        createdAt: new Date()    // Timestamp when account is created
+      await setDoc(doc(db, "users", user.uid), {
+        email: user.email,
+        name: name,
+        campus: campus,
+        uid: user.uid,
+        createdAt: new Date()
       });
 
       Alert.alert("Success", "Account created! Please login.");
-      navigation.replace("Login"); // Navigate to Login screen
+      navigation.replace("Login");
     } catch (error) {
-      Alert.alert("Signup Failed", error.message); // Show error message if signup fails
+      Alert.alert("Signup Failed", error.message);
     }
   };
 
@@ -40,21 +46,43 @@ const SignupScreen = ({ navigation }) => {
     <View style={styles.container}>
       <Text style={styles.title}>Sign Up</Text>
 
-      <TextInput 
-        placeholder="Email" 
-        value={email} 
-        onChangeText={setEmail} 
-        style={styles.input} 
+      <TextInput
+        placeholder="Full Name"
+        value={name}
+        onChangeText={setName}
+        style={styles.input}
+      />
+
+      <TextInput
+        placeholder="Campus"
+        value={campus}
+        onChangeText={setCampus}
+        style={styles.input}
+      />
+
+      <TextInput
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        style={styles.input}
         autoCapitalize="none"
         keyboardType="email-address"
       />
 
-      <TextInput 
-        placeholder="Password" 
-        value={password} 
-        onChangeText={setPassword} 
-        secureTextEntry 
-        style={styles.input} 
+      <TextInput
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        style={styles.input}
+      />
+
+      <TextInput
+        placeholder="Confirm Password"
+        value={confirmPassword}
+        onChangeText={setConfirmPassword}
+        secureTextEntry
+        style={styles.input}
       />
 
       <TouchableOpacity onPress={handleSignup} style={styles.button}>

@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from "react";
+// Live-updating ProfileScreen.js with real-time friends count
+import React, { useState, useEffect } from "react";
 import { View, StyleSheet, Alert, TouchableOpacity, Modal } from "react-native";
 import { Avatar, Button, Text, Divider } from "react-native-paper";
 import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import { auth, db } from "../firebaseConfig";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, onSnapshot, collection } from "firebase/firestore";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import EditProfile from "../EditProfile";
 
@@ -27,7 +28,6 @@ const ProfileScreen = () => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        console.log("Fetching profile data...");
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
           const data = userDoc.data();
@@ -36,39 +36,34 @@ const ProfileScreen = () => {
           setLastName(data.lastName || "");
           setBio(data.bio || "");
           setBirthday(data.birthday || "");
-          setFriendsCount(data.friendsCount || 0);
         }
       } catch (error) {
         Alert.alert("Error", "Could not load profile data.");
       }
     };
+
+    const unsubscribeFriends = onSnapshot(collection(db, "users", user.uid, "friends"), (snapshot) => {
+      setFriendsCount(snapshot.size);
+    });
+
     fetchUserProfile();
+    return () => unsubscribeFriends();
   }, [user]);
 
-  // Update Firestore when user updates their profile
   const updateUserProfile = async (updatedData) => {
     try {
-      console.log("Updating Firestore...");
-      setEditProfileVisible(false); // Close modal before updating Firestore
-
+      setEditProfileVisible(false);
       await setDoc(doc(db, "users", user.uid), updatedData, { merge: true });
-
-      console.log("Firestore update complete.");
-
-      // Update local state with new profile data
       setFirstName(updatedData.firstName);
       setLastName(updatedData.lastName);
       setBio(updatedData.bio);
       setBirthday(updatedData.birthday);
-
-      console.log("Profile updated.");
     } catch (error) {
       Alert.alert("Error", "Could not update profile data.");
       console.error("Firestore Update Error:", error);
     }
   };
 
-  // Pick an image from camera or gallery
   const pickImage = async (fromCamera = false) => {
     let result;
     if (fromCamera) {
@@ -90,17 +85,13 @@ const ProfileScreen = () => {
     if (!result.canceled && result.assets.length > 0) {
       const newImageUri = result.assets[0].uri;
       setImageUri(newImageUri);
-
-      // Save image to Firestore
       await setDoc(doc(db, "users", user.uid), { imageUri: newImageUri }, { merge: true });
-
       setUploadVisible(false);
     }
   };
 
   return (
     <View style={styles.container}>
-      {/* Profile Avatar (Click to Upload Image) */}
       <TouchableOpacity onPress={() => setUploadVisible(true)}>
         <Avatar.Image
           size={140}
@@ -108,12 +99,10 @@ const ProfileScreen = () => {
         />
       </TouchableOpacity>
 
-      {/* User Info */}
       <Text style={styles.name}>{firstName} {lastName}</Text>
       <Text style={styles.friendsCount}>👥 Friends: {friendsCount}</Text>
       <Text style={styles.bio}>{bio}</Text>
 
-      {/* Edit Profile Button */}
       <Button
         icon="pencil"
         mode="contained"
@@ -125,27 +114,31 @@ const ProfileScreen = () => {
 
       <Divider style={styles.divider} />
 
-      {/* Navigation Menu */}
       <View style={styles.menuContainer}>
-        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("Friends")}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("FriendsScreen")}> 
           <Icon name="account-group" size={24} color="#666" />
           <Text style={styles.menuText}>Friends</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("ChatListScreen")}>
-         <Icon name="message" size={24} color="#666" />
-         <Text style={styles.menuText}>Messages</Text>
+        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("ChatListScreen")}> 
+          <Icon name="message" size={24} color="#666" />
+          <Text style={styles.menuText}>Messages</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("MyCourses")}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("MyCourses")}> 
           <Icon name="book" size={24} color="#666" />
           <Text style={styles.menuText}>My Courses</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("Settings")}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("Settings")}> 
           <Icon name="cog" size={24} color="#666" />
           <Text style={styles.menuText}>Settings</Text>
         </TouchableOpacity>
+        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("StudentCardScreenRouter")}> 
+          <Icon name="camera" size={24} color="#666" />
+          <View style={{ marginLeft: 15 }}>
+            <Text style={styles.menuText}>Virtual Card</Text>
+          </View>
+        </TouchableOpacity>
       </View>
 
-      {/* Modal for Edit Profile */}
       {editProfileVisible && (
         <EditProfile
           user={{ firstName, lastName, bio, birthday }}
@@ -154,7 +147,6 @@ const ProfileScreen = () => {
         />
       )}
 
-      {/* Modal for Upload Profile Picture */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -178,7 +170,6 @@ const ProfileScreen = () => {
   );
 };
 
-// ================= STYLES =================
 const styles = StyleSheet.create({
   container: {
     flex: 1,
